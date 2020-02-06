@@ -7,10 +7,10 @@ set -o pipefail
 [ -n "$ASDF_INSTALL_PATH" ] || (>&2 echo 'Missing ASDF_INSTALL_PATH' && exit 1)
 
 get_platform () {
-    local platform="$(uname | tr '[:upper:]' '[:lower:]')"
+    local platform="$(uname)"
     
     case "$platform" in
-        linux|darwin|freebsd)
+        Linux|Darwin)
             echo "Platform '${platform}' supported!" >&2
         ;;
         *)
@@ -31,10 +31,6 @@ get_arch () {
 
 	case "$(uname -m)" in
 		x86_64|amd64) arch="x86_64"; ;;
-		i686|i386) arch="386"; ;;
-		armv6l|armv7l) arch="armv6l"; ;;
-		aarch64) arch="arm64"; ;;
-		ppc64le) arch="ppc64le"; ;;
 		*)
 			echo "Arch '$(uname -m)' not supported!" >&2
 			exit 1
@@ -48,7 +44,7 @@ get_download_url() {
     local version=$1
     local platform=$2
     local arch=$3
-    echo "https://github.com/protocolbuffers/protobuf/releases/download/v${version}/protoc-${version}-${platform}-${arch}.zip"
+    echo "https://github.com/bufbuild/buf/releases/download/v${version}/buf-${platform}-${arch}.tar.gz"
 }
 
 my_mktemp () {
@@ -71,8 +67,11 @@ install_skaffold() {
     local download_url="$(get_download_url $version $platform $arch)"
 
 	(
-		curl -fsSL "${download_url}" -o "${tempdir}/protoc.zip"
-		unzip -qq "${tempdir}/protoc.zip" -d "${install_path}"
+		curl -sSL $download_url -o "${tempdir}/archive.tar.gz"
+        tar -C "$tempdir" -xvzf "${tempdir}/archive.tar.gz" --strip-components 1
+        mv ${tempdir}/* ${install_path}
+
+	    chmod -R +x ${install_path}/bin
 	)
 
 	rm -rf $tempdir 
